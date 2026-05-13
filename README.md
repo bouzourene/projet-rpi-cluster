@@ -53,7 +53,6 @@ sudo sed 's/ALL) ALL/ALL) NOPASSWD: ALL/g' -i /etc/sudoers
 
 ### 2.5.2 Désactiver le swap
 Pour Kubernetes, il est important de désactiver le swap sur tous les noeuds. Il ne faut pas oublier de relancer le système.
-
 ```bash
 sudo apt-get remove rpi-swap -y
 sudo apt-get autoremove -y
@@ -62,7 +61,6 @@ sudo reboot
 
 # 3. Préparation du système
 Exécuter le script suivant sur tous les noeuds :
-
 ```bash
 curl https://raw.githubusercontent.com/bouzourene/projet-rpi-cluster/refs/heads/main/scripts/prepare-system.sh | sudo bash -
 ```
@@ -71,31 +69,89 @@ Si vous souhaitez lire et comprendre les actions du script, vous pouvez le faire
 
 # 4. Création du cluster k8s
 ## 4.1 Préambule
+Nous allons nous connecter en SSH sur le premier noeud du control plane `k8s-cpl-01` et procéder à la création du cluster.
+
 ## 4.2 Entrée hosts temporaire
 Comme la VIP haute disponibilité n'existe pas encore, nous allons créer une entrée statique dans le fichier hosts de notre premier noeud.
-
 ```bash
 echo "127.0.0.1 k8s-vip-copl.lab4tech.lan k8s-vip-copl" | sudo tee -a /etc/hosts 
 ```
 
 ## 4.3 Kubeadm init
+```bash
+kubeadm init --kubernetes-version 1.32.13 --control-plane-endpoint k8s-vip-copl.lab4tech.lan --pod-network-cidr 172.16.0.0/16
+```
+Il faut bien penser à définir une version de cluster compatible avec les composants Kubernetes déployés sur le système.
+Nous définissons l'endpoint qui sera la VIP hautement disponible.
+La pod network CIDR est requis car nous allons déployer la couche réseau kube-router.
+
 ## 4.4 Upload certificats
+```bash
+kubeadm init phase upload-certs --upload-certs
+```
+Une fois le cluster créé, nous allons uploader les certificats sur le cluster.
+Il sera donc plus facile de joindre des nouveaux noeuds au cluster.
+Pensez à copier la clé qui vous est retournée, elle sera nécessaire plus tard.
+
 ## 4.5 Configuration kubectl
+Pour pouvoir utiliser la commande `kubectl` depuis notre premier noeud, il faut installer le fichier de configuration `admin.conf` dans le home directory du compte `k8s-admin`.
+Depuis un shell avec l'utilisateur `k8s-admin`:
+```bash
+mkdir ~/.kube
+sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+sudo chown k8s-admin:k8s-admin ~/.kube/config
+```
+
+Vérification:
+```bash
+kubeclt get nodes
+```
+
 ## 4.6 Couche réseau
+Nous allons maintenant déployer la couche réseau `kube-router`.
+```bash
+kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
+```
+
 ## 4.7 VIP Control Plane
+Pour créer la VIP HA, nous devons ajouter les définitions RBAC de kube-vip et déployer un deployment customisé selon nons besoins.
+```bash
+kubectl apply -f https://kube-vip.io/manifests/rbac.yaml
+kubectl apply -f https://raw.githubusercontent.com/bouzourene/projet-rpi-cluster/refs/heads/main/kube-vip/deployment.yaml
+```
+
 ## 4.8 Retirer l'entrée hosts temporaire
 Maintenant que nous avons bien vérifié que la VIP a bien été créée, nous allons retirer l'entrée statique dans le fichier hosts.
-
 ```bash
 sudo sed 's/127.0.0.1 k8s-vip-copl/#127.0.0.1 k8s-vip-copl/g' -i /etc/hosts
 ```
 
 # 5. Ajout des noeuds
+## 5.1 Préambule
+On commence par générer un token d'invitation sur le premier noeud `k8s-cpl-01`:
+```bash
+kubeadm token create --print-join-command
+```
+
 ## 5.1 Noeuds control plane
+Sur nos deux noeuds control plane supplémentaires `k8s-cpl-02` et `k8s-cpl-03`:
+```bash
+kubeadm join k8s-vip-copl.lab4tech.lan:6443 --token <token> --discovery-token-ca-cert-hash <discovery-token-ca-cert-hash> --certificate-key <certificate-key> --control-plane
+```
+Les paramètres `token` et `discovery-token-ca-cert-hash` sont à récupérer dans l'étape 5.1 et le paramètre `certificate-key` dans l'étape 4.4.
+
 ## 5.2 Noeuds workers
+Sur nos trois noeuds worker `k8s-wrk-01`, `k8s-wrk-02` et `k8s-wrk-03`:
+```bash
+kubeadm join k8s-vip-copl.lab4tech.lan:6443 --token <token> --discovery-token-ca-cert-hash <discovery-token-ca-cert-hash> --certificate-key <certificate-key>
+```
+Les paramètres `token` et `discovery-token-ca-cert-hash` sont à récupérer dans l'étape 5.1 et le paramètre `certificate-key` dans l'étape 4.4.
 
 # 6. Stockage distribué avec Rook Ceph
 ## 6.1 Préambule
+Rook Ceph est une couche de stockage distribué entre tous les noeuds worker de notre cluster.
+Les partitions de 80GB non formatées sur les trois noeuds worker seront formatées et utilisées par Rook Ceph.
+
 ## 6.2 Préparation du cluster k8s
 ```bash
 kubectl create -f https://raw.githubusercontent.com/bouzourene/projet-rpi-cluster/refs/heads/main/rook-ceph/common.yaml
@@ -105,6 +161,7 @@ kubectl create -f https://raw.githubusercontent.com/bouzourene/projet-rpi-cluste
 ```
 
 ## 6.3 Création du cluster Ceph
+Le fichier original a été modifié pour que le cluster soit construit sur la partition `sda3` de chaque noeud worker.
 ```bash
 kubectl create -f https://raw.githubusercontent.com/bouzourene/projet-rpi-cluster/refs/heads/main/rook-ceph/cluster.yaml
 ```
@@ -120,6 +177,6 @@ kubectl create -f https://raw.githubusercontent.com/bouzourene/projet-rpi-cluste
 kubectl create -f https://raw.githubusercontent.com/bouzourene/projet-rpi-cluster/refs/heads/main/rook-ceph/cephfs-storageclass.yaml
 ```
 
-# X. Autres
-## X.1 Autoriser la clé SSH d'un administrateur supplémentaire
+# 7. Autres
+## 7.1 Autoriser la clé SSH d'un administrateur supplémentaire
 Pour que tous les administrateurs puissent se connecter en SSH sur les noeuds Kubernetes, il faut autoriser leur clé SSH sur l'utilisateur `k8s-admin`. Commencez par récupérer la clé publique que vous souhaitez autoriser, elle doit se présenter sur une seule ligne et ressembler à ceci: `ssh-ed25519 AAAAC3NzaC1... votre-email@example.com`. Puis connectez-vous sur chaque noeud et ajoutez la clé comme ceci: `echo 'ssh-ed25519 AAAAC3NzaC1... votre-email@example.com' >> ~/.ssh/authorized_keys`.
