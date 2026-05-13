@@ -74,7 +74,7 @@ echo "deb [signed-by=/usr/share/keyrings/helm.gpg] https://packages.buildkite.co
 apt-get update
 apt-get install helm -y
 
-echo "[>] Installing "
+echo "[>] Installing kubernetes components"
 
 # Install repo
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.35/deb/Release.key | \
