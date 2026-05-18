@@ -112,6 +112,7 @@ Nous allons maintenant déployer la couche réseau `kube-router`.
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml
 ```
+[Documentation officielle de kube-router](https://www.kube-router.io/docs/)
 
 ## 4.7 VIP Control Plane
 Pour créer la VIP HA, nous devons ajouter les définitions RBAC de kube-vip et déployer un deployment customisé selon nons besoins.
@@ -133,14 +134,14 @@ On commence par générer un token d'invitation sur le premier noeud `k8s-cpl-01
 kubeadm token create --print-join-command
 ```
 
-## 5.1 Noeuds control plane
+## 5.2 Noeuds control plane
 Sur nos deux noeuds control plane supplémentaires `k8s-cpl-02` et `k8s-cpl-03`:
 ```bash
 kubeadm join k8s-vip-copl.lab4tech.lan:6443 --token <token> --discovery-token-ca-cert-hash <discovery-token-ca-cert-hash> --certificate-key <certificate-key> --control-plane
 ```
 Les paramètres `token` et `discovery-token-ca-cert-hash` sont à récupérer dans l'étape 5.1 et le paramètre `certificate-key` dans l'étape 4.4.
 
-## 5.2 Noeuds workers
+## 5.3 Noeuds workers
 Sur nos trois noeuds worker `k8s-wrk-01`, `k8s-wrk-02` et `k8s-wrk-03`:
 ```bash
 kubeadm join k8s-vip-copl.lab4tech.lan:6443 --token <token> --discovery-token-ca-cert-hash <discovery-token-ca-cert-hash> --certificate-key <certificate-key>
@@ -151,6 +152,7 @@ Les paramètres `token` et `discovery-token-ca-cert-hash` sont à récupérer da
 ## 6.1 Préambule
 Rook Ceph est une couche de stockage distribué entre tous les noeuds worker de notre cluster.
 Les partitions de 80GB non formatées sur les trois noeuds worker seront formatées et utilisées par Rook Ceph.
+[Documentation officielle de Rook Ceph](https://rook.io/docs/rook/latest-release/Getting-Started/intro/)
 
 ## 6.2 Préparation du cluster k8s
 ```bash
