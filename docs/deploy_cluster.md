@@ -150,8 +150,8 @@ Les paramètres `token` et `discovery-token-ca-cert-hash` sont à récupérer da
 
 # 6. Stockage distribué avec Rook Ceph
 ## 6.1 Préambule
-Rook Ceph est une couche de stockage distribué entre tous les noeuds worker de notre cluster.
-Les partitions de 80GB non formatées sur les trois noeuds worker seront formatées et utilisées par Rook Ceph.
+Rook Ceph est une couche de stockage distribué entre tous les noeuds worker de notre cluster. \
+Les partitions de 80GB non formatées sur les trois noeuds worker seront formatées et utilisées par Rook Ceph. \
 \
 [Documentation officielle de Rook Ceph](https://rook.io/docs/rook/latest-release/Getting-Started/intro/)
 
