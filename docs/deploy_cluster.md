@@ -79,7 +79,7 @@ echo "127.0.0.1 k8s-vip-copl.lab4tech.lan k8s-vip-copl" | sudo tee -a /etc/hosts
 
 ## 4.3 Kubeadm init
 ```bash
-kubeadm init --kubernetes-version 1.32.13 --control-plane-endpoint k8s-vip-copl.lab4tech.lan --pod-network-cidr 172.16.0.0/16
+sudo kubeadm init --kubernetes-version 1.32.13 --control-plane-endpoint k8s-vip-copl.lab4tech.lan --pod-network-cidr 172.16.0.0/16
 ```
 Il faut bien penser à définir une version de cluster compatible avec les composants Kubernetes déployés sur le système.
 Nous définissons l'endpoint qui sera la VIP hautement disponible.
@@ -87,7 +87,7 @@ La pod network CIDR est requis car nous allons déployer la couche réseau kube-
 
 ## 4.4 Upload certificats
 ```bash
-kubeadm init phase upload-certs --upload-certs
+sudo kubeadm init phase upload-certs --upload-certs
 ```
 Une fois le cluster créé, nous allons uploader les certificats sur le cluster.
 Il sera donc plus facile de joindre des nouveaux noeuds au cluster.
@@ -104,7 +104,7 @@ sudo chown k8s-admin:k8s-admin ~/.kube/config
 
 Vérification:
 ```bash
-kubeclt get nodes
+kubectl get nodes
 ```
 
 ## 4.6 Couche réseau
