@@ -33,8 +33,8 @@ Pour chaque RPi :
 - Ne pas activer RPi Connect
 - Assurez-vous d'avoir sélectionné le bon disque et procédez à l'écriture
 - Montez la partition `bootfs`
-- Remplacez le fichier `config.txt` par celui [disponible ici](https://raw.githubusercontent.com/bouzourene/projet-rpi-cluster/refs/heads/main/bootfs/network-config) (il contient un paramètre permettant de démarrer le RPi en USB sur une alimentation non officielle)
-- Remplacez le ficher `network-config` par le template [disponible ici](https://raw.githubusercontent.com/bouzourene/projet-rpi-cluster/refs/heads/main/bootfs/config.txt) (**Ne pas oublier de changer l'adresse IP pour chaque noeud**)
+- Remplacez le fichier `config.txt` par celui [disponible ici](https://raw.githubusercontent.com/bouzourene/projet-rpi-cluster/refs/heads/main/bootfs/config.txt) (il contient un paramètre permettant de démarrer le RPi en USB sur une alimentation non officielle)
+- Remplacez le ficher `network-config` par le template [disponible ici](https://raw.githubusercontent.com/bouzourene/projet-rpi-cluster/refs/heads/main/bootfs/network-config) (**Ne pas oublier de changer l'adresse IP pour chaque noeud**)
 - Ajoutez les paramètres kernel `cgroup_enable=memory cgroup_memory=1` dans le fichier cmdline.txt
 - Démontez proprement la partition `bootfs`
 
